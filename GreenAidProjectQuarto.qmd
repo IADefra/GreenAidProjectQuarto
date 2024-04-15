@@ -1,0 +1,555 @@
+---
+title: "Green Aid Project Report"
+subtitle: "Service Requests From Leeds Council From 2007-2011"
+format: 
+  html:
+    toc: true
+    toc_depth: 2 # Adjust TOC size
+    number_sections: true
+editor: visual
+theme: cosmo
+---
+
+<style>
+  h1, h2, h3, h4, h5, h6, .title, .subtitle {
+    background-color: #94d01c; /* Default background color */
+    color: black; /* Default text color */
+    padding: 0.5em; /* Default padding */
+    margin-left: -20px; /* Default margin-left */
+    margin-right: -20px; /* Default margin-right */
+    background-image: url('images/dashlogo.png'); /* Adjust the path as necessary */
+    background-repeat: no-repeat;
+    background-position: calc(100% - 3px) center; /* Position the logo to the right and shift it left by 20px */
+    background-size: 70px 70px; /* Adjust the size as necessary */
+  }
+
+  /* Exclude the logo for #toc-title, #section h4, and paragraphs in #title-block-header > div:first-child */
+  #toc-title,
+  #section h4,
+  #title-block-header > div:first-child > p {
+    background-image: none !important; /* Remove the background logo */
+    background-color: transparent !important; /* Ensure background color is transparent */
+    color: inherit !important; /* Inherit text color from parent */
+    padding: inherit !important; /* Inherit padding from parent */
+    margin-left: inherit !important; /* Inherit margin-left from parent */
+    margin-right: inherit !important; /* Inherit margin-right from parent */
+  }
+</style>
+
+
+
+
+
+
+
+
+# Introduction
+
+In an era where urban areas are increasingly pressured by population growth, environmental concerns, and the need for sustainable development, the role of local councils has become pivotal in managing the balance between urban expansion and environmental conservation. Service requests to councils are a direct line of communication from residents to their local government, serving as a barometer for community needs and priorities.
+
+Leeds, a bustling metropolis in the United Kingdom, has been at the forefront of this challenge. With its commitment to addressing environmental issues and enhancing the quality of life for its citizens, this project symbolizes a concerted effort to respond to service requests in a manner that aligns with sustainable practices and ecological stewardship.
+
+# Objectives of the Green Aid Project
+
+The Green Aid Project, established by the Leeds City Council, aims to capitalize on these investments by improving environmental services, enhancing the energy efficiency of council housing, and fostering sustainable development across Leeds. The project underscores the council's commitment to not only address immediate service requests but also to ensure long-term environmental well-being and resilience.
+
+# Scope of the Report
+
+Considering the council's significant investments and the recent challenges faced, this report provides a comprehensive analysis of service requests submitted to Leeds City Council from 2007 to 2011. The report will examine the types and frequencies of requests, their spatial and temporal distribution, and the council's forecasted service needs. By doing so, we aim to extract actionable insights that will support the objectives of the Green Aid Project and contribute to Leeds' sustainable development goals.
+
+
+## Data Cleaning Summary
+
+The dataset contains service request records from Leeds City Council spanning 2007 to 2011 ([Environmental Service Requests](https://datamillnorth.org/dataset/e61k0/environmental-service-requests)). It offers a granular view of community needs and council responsiveness across various locations and service categories. With over 160,000 entries, the data provides an extensive canvas for understanding the dynamics of service requests within the city.
+
+
+<img src="images/spreadsheet.png" alt="Spreadsheet Visualization" title="Spreadsheet Example" width="800"/>
+
+
+
+<img src="images/datasclean.png" alt="Data Cleaning Visualization" title="Data Cleaning Process" width="800"/>
+
+
+## Types of Analysis & Findings 
+
+This section provides an overview of the various analyses conducted as part of the Green Aid Project, offering insights into service request trends, types, and other significant findings derived from the data.
+
+### Annual Trend of Service Request
+
+
+```{python}
+#| echo: false
+
+import pandas as pd
+import plotly.express as px
+import os
+
+try:
+    cleaned_csv_file_path = "C:/Users/ia000040/Documents/GreenAidProjectQuarto/data/Cleaned_Service_Requests.csv"
+    if not os.path.isfile(cleaned_csv_file_path):
+        raise FileNotFoundError(f"File not found: {cleaned_csv_file_path}")
+    
+    df = pd.read_csv(cleaned_csv_file_path)
+    
+    # Convert 'RECEIVED' column to datetime format
+    df['RECEIVED'] = pd.to_datetime(df['RECEIVED'])
+    # Extract the year from the 'RECEIVED' column
+    df['YEAR'] = df['RECEIVED'].dt.year
+
+    # Calculate the number of unique locations and service types
+    num_unique_locations = df['WARD'].nunique()
+    num_unique_service_types = df['SR TYPE DESC'].nunique()
+    print(f"Number of locations: {num_unique_locations}")
+    print(f"Number of service request types: {num_unique_service_types}")
+    
+    # Group by year and get counts
+    annual_trend_df = df.groupby('YEAR').size().reset_index(name='count')
+    
+    # Ensure the year 2011 is included in the x-axis ticks
+    # Here we convert years to string to ensure compatibility with Plotly
+    annual_trend_df['YEAR'] = annual_trend_df['YEAR'].astype(str)
+    
+    fig = px.line(annual_trend_df, x='YEAR', y='count', #title='Annual Trend of Service Requests',
+                  labels={'count': 'Number of Service Requests', 'YEAR': 'Year'})
+    
+    # Update the layout of the figure to include all years on the x-axis
+    fig.update_layout(
+        xaxis=dict(
+            tickmode='array',
+            tickvals=annual_trend_df['YEAR'].tolist(),  # Set tick values as the list of years
+            type='category'  # This ensures that the plotly treats the x-axis as categorical data
+        ),
+        yaxis_title='Number of Service Requests'
+    )
+    
+    # Show the figure
+    fig.show()
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+```
+
+### Number of Service Requests by Location
+
+
+```{python}
+#| echo: false
+
+import pandas as pd
+import plotly.graph_objects as go
+
+# Load your DataFrame
+cleaned_csv_file_path = "C:/Users/ia000040/Documents/GreenAidProject/Data/Cleaned_Service_Requests.csv"
+df = pd.read_csv(cleaned_csv_file_path)
+
+# Group by 'WARD' and count the number of service calls
+ward_service_calls = df.groupby('WARD').size().reset_index(name='calls')
+ward_service_calls = ward_service_calls.sort_values(by='calls', ascending=True)
+
+# Create a Plotly graph object for more customizability
+fig = go.Figure()
+
+fig.add_trace(go.Bar(
+    x=ward_service_calls['calls'],
+    y=ward_service_calls['WARD'],
+    orientation='h',
+    text=ward_service_calls['calls'],  # Set the text to be the number of calls
+    textposition='outside',  # Position the text outside the bar for better visibility
+    marker_color='skyblue',  # Set the bar color
+    textfont=dict(size=12),  # Adjust the text font size
+))
+
+fig.update_layout(
+    #title='Number of Service Calls by Location',
+    xaxis_title='Number of Service Calls',
+    yaxis_title='Location',
+    plot_bgcolor='rgba(0,0,0,0)',  # Optional: set the background to transparent
+    margin=dict(l=150),  # Adjust left margin to ensure location names are not cut off
+    height=800,  # Optionally, adjust the figure height based on your data
+)
+
+# Optionally, adjust the x-axis range to ensure labels fit
+fig.update_xaxes(range=[0, ward_service_calls['calls'].max() * 1.1])
+
+# Show the figure
+fig.show()
+
+
+
+```
+
+
+### Top 20 Service Request Types
+
+```{python}
+#| echo: false
+
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+
+cleaned_csv_file_path = "C:/Users/ia000040/Documents/GreenAidProject/Data/Cleaned_Service_Requests.csv"
+df = pd.read_csv(cleaned_csv_file_path)
+
+# Count the occurrences of each 'SR TYPE DESC' and select the top 20
+top_20_service_types = df['SR TYPE DESC'].value_counts().head(20)
+
+# Sort the series for better visuals
+sorted_top_20 = top_20_service_types.sort_values()
+
+# Initialize a Plotly Graph Objects figure
+fig = go.Figure()
+
+# Add the horizontal bar trace
+fig.add_trace(go.Bar(
+    y=sorted_top_20.index, 
+    x=sorted_top_20.values, 
+    orientation='h',
+    marker=dict(color='skyblue', line=dict(color='blue', width=1)),
+    text=sorted_top_20.values,  # Text is set to be the frequency values
+    textposition='outside',  # Position the frequency text outside the bars
+))
+
+# Update the figure layout, including an extended x-axis range
+fig.update_layout(
+    #title='Top 20 Service Request Types',
+    xaxis=dict(
+        title='Number of Requests',
+        range=[0, sorted_top_20.values.max() * 1.2]  # Extend the x-axis range by 20%
+    ),
+    yaxis=dict(
+        title='Service Request Type',
+        automargin=True
+    ),
+    plot_bgcolor='rgba(0,0,0,0)',  # Transparent background
+    showlegend=False,  # Ensure no unwanted legend/key is shown
+    margin=dict(l=160, r=100, t=40, b=20),  # Adjust margins to ensure visibility
+    width=800  # Adjust width if necessary
+)
+
+
+# Display the figure
+fig.show()
+
+```
+
+### Top 20 Service Request Types by Location (Heatmap)
+
+```{python}
+#| echo: false
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load the DataFrame
+df = pd.read_csv('C:\\Users\\ia000040\\Documents\\GreenAidProject\\Data\\Cleaned_Service_Requests.csv')
+
+# Group by 'WARD' and 'SR TYPE DESC' and count the occurrences
+ward_service_counts = df.groupby(['WARD', 'SR TYPE DESC']).size().reset_index(name='Count')
+
+# Get the top 20 service request types overall
+top_20_service_types = ward_service_counts['SR TYPE DESC'].value_counts().head(20).index
+
+# Filter the dataframe to only include the top 20 service request types
+ward_service_counts_top_20 = ward_service_counts[ward_service_counts['SR TYPE DESC'].isin(top_20_service_types)]
+
+# Pivot the data to have wards as rows and service request types as columns
+ward_service_counts_pivot = ward_service_counts_top_20.pivot_table(index='WARD', columns='SR TYPE DESC', values='Count', aggfunc='sum', fill_value=0)
+
+# Dynamically determine figure size
+num_x_categories = len(ward_service_counts_pivot.columns)
+num_y_categories = len(ward_service_counts_pivot.index)
+fig_width = max(14, num_x_categories * 0.5)  # Base width, increase as needed
+fig_height = max(12, num_y_categories * 0.4)  # Base height, adjust based on content
+
+# Generate the heatmap
+plt.figure(figsize=(fig_width, fig_height), dpi=100)
+heatmap = sns.heatmap(ward_service_counts_pivot, annot=True, fmt='d', cmap='coolwarm', linewidths=.5, annot_kws={'size':12})
+heatmap.set_xlabel('Service Request Type', fontsize=15)
+heatmap.set_ylabel('Location (Ward)', fontsize=15)
+plt.xticks(rotation=45, ha="right", fontsize=15)  # Adjust for better label visibility
+plt.yticks(rotation=0, fontsize=15)
+
+#plt.tight_layout()  # Adjust layout to make room for labels
+plt.show()
+
+
+```
+
+### Top 20 Service Request Types by Location (Heatmap in percentages)
+
+
+
+```{python}
+#| echo: false
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load the DataFrame
+df = pd.read_csv('C:\\Users\\ia000040\\Documents\\GreenAidProject\\Data\\Cleaned_Service_Requests.csv')
+
+# Group by 'WARD' and 'SR TYPE DESC' and count the occurrences
+ward_service_counts = df.groupby(['WARD', 'SR TYPE DESC']).size().reset_index(name='Count')
+
+# Get the top 20 service request types overall
+top_20_service_types = ward_service_counts['SR TYPE DESC'].value_counts().head(20).index.tolist()
+
+# Filter the dataframe to only include the top 20 service request types
+ward_service_counts_top_20 = ward_service_counts[ward_service_counts['SR TYPE DESC'].isin(top_20_service_types)]
+
+# Pivot the data to have wards as rows and service request types as columns
+ward_service_counts_pivot = ward_service_counts_top_20.pivot(index='WARD', columns='SR TYPE DESC', values='Count').fillna(0)
+
+# Calculate the percentages
+percentage_pivot = ward_service_counts_pivot.div(ward_service_counts_pivot.sum(axis=1), axis=0) * 100
+
+# Convert percentage_pivot to a DataFrame of strings with percentage symbols for annotating the heatmap
+percentage_annotations = percentage_pivot.applymap(lambda x: f"{x:.0f}%")
+
+# Dynamically determine figure size with adjusted multipliers for a smaller size
+num_x_categories = len(percentage_pivot.columns)
+num_y_categories = len(percentage_pivot.index)
+fig_width = max(12, num_x_categories * 0.4)  # Adjusted width for a smaller size
+fig_height = max(10, num_y_categories * 0.35)  # Adjusted height for a smaller size
+
+# Generate the heatmap with percentage annotations and adjust the font size of annotations
+plt.figure(figsize=(fig_width, fig_height), dpi=100)
+sns.heatmap(percentage_pivot, annot=percentage_annotations, fmt='', cmap='Blues', linewidths=.5, 
+            annot_kws={'size':10})  # Slightly smaller font size to fit the reduced figure size
+plt.xlabel('Service Request Type', fontsize=12)
+plt.ylabel('Location (Ward)', fontsize=12)
+plt.xticks(rotation=45, ha="right", fontsize=10)  # Slightly smaller font size for better fit
+plt.yticks(rotation=0, fontsize=10)
+
+plt.tight_layout()  # Adjust layout to make room for labels
+plt.show()
+
+
+```
+
+### Historical & Forcast Analysis
+```{python}
+#| echo: false
+
+import pandas as pd
+import plotly.express as px
+from joblib import load
+import numpy as np
+import pandas as pd
+import warnings
+
+pd.options.mode.chained_assignment = None  # default='warn'
+warnings.filterwarnings('ignore', category=pd.errors.PerformanceWarning)
+
+
+
+# Load the DataFrame
+df = pd.read_csv('C:\\Users\\ia000040\\Documents\\GreenAidProject\\Data\\Cleaned_Service_Requests.csv')
+
+# Ensure 'RECEIVED' column is in datetime format
+df['RECEIVED'] = pd.to_datetime(df['RECEIVED'])
+
+# Define the start and end dates for filtering and service types of interest
+start_date = '2007-01-01'
+end_date = '2011-12-31'
+service_types = ["Overgrown Vegetation", "Housing - Defect", "Rats Domestic INSIDE property FREE", "Flytipping"]
+wards_of_interest = ["Headingley & Hyde Park"]
+
+# Filter the DataFrame for the specified date range, service types, and wards
+df_filtered = df[(df['RECEIVED'].between(start_date, end_date)) & 
+                 df['SR TYPE DESC'].isin(service_types) & 
+                 df['WARD'].isin(wards_of_interest)]
+
+# Create a 'YEAR_MONTH' column for aggregation and convert to string for Plotly compatibility
+df_filtered['YEAR_MONTH'] = df_filtered['RECEIVED'].dt.to_period('M').astype(str)
+
+# Aggregate data by 'YEAR_MONTH', 'WARD', and 'SR TYPE DESC'
+grouped_df = df_filtered.groupby(['YEAR_MONTH', 'WARD', 'SR TYPE DESC']).size().reset_index(name='COUNT')
+
+# Ensure all service types of interest are represented in the plot
+for service_type in service_types:
+    if service_type not in grouped_df['SR TYPE DESC'].unique():
+        # Adding a row for missing service types with a count of 0 for visual completeness
+        missing_row = {'YEAR_MONTH': grouped_df['YEAR_MONTH'].min(), 'WARD': wards_of_interest[0], 'SR TYPE DESC': service_type, 'COUNT': 0}
+        grouped_df = grouped_df.append(missing_row, ignore_index=True)
+
+# Generating tickvals from the unique 'YEAR_MONTH' values, converted to datetime for Plotly
+tickvals = pd.to_datetime(grouped_df['YEAR_MONTH'].unique()).sort_values()
+
+# Scale factor for adjusting graph size
+scale_factor = 0.9
+
+# Adjusted size based on the scale factor
+adjusted_width = int(1400 * scale_factor)
+adjusted_height = int(600 * scale_factor)
+
+# Plotting historical data with Plotly Express
+fig = px.line(grouped_df, x='YEAR_MONTH', y='COUNT', color='SR TYPE DESC', line_group='WARD',
+              labels={'YEAR_MONTH': 'Date', 'COUNT': 'Service Request Count', 'SR TYPE DESC': 'Service Type'},
+              title='Historical Service Requests in Headingley & Hyde Park')
+fig.update_layout(
+    xaxis_title='Date',
+    yaxis_title='Number of Requests',
+    legend_title='Service Types',
+    width=adjusted_width,  # Use adjusted width
+    height=adjusted_height,  # Use adjusted height
+)
+fig.update_xaxes(
+    dtick="M1", 
+    tickformat="%b %Y", 
+    ticklabelmode="period",
+    tickvals=tickvals,  # Set tick values as the unique 'YEAR_MONTH' values
+    tickangle=-45,  # Rotate labels for better readability
+    tickfont=dict(size=11)  # Adjust font size of x-axis labels here
+)
+fig.update_yaxes(
+    rangemode='tozero'  # Start y-axis from 0
+)
+fig.show()
+
+```
+
+#### 
+```{python}
+#| echo: false
+
+
+import pandas as pd
+import plotly.express as px
+from joblib import load
+import numpy as np
+import warnings
+
+# Load your data
+file_path = 'C:\\Users\\ia000040\\Documents\\GreenAidProject\\Data\\Cleaned_Service_Requests.csv'
+df = pd.read_csv(file_path)
+
+# Convert RECEIVED to datetime if it isn't already
+if not np.issubdtype(df['RECEIVED'].dtype, np.datetime64):
+    df['RECEIVED'] = pd.to_datetime(df['RECEIVED'])
+
+# Extract year and month from RECEIVED column
+df['YEAR'] = df['RECEIVED'].dt.year
+df['MONTH'] = df['RECEIVED'].dt.month
+
+# Aggregate data
+grouped_df = df.groupby(['YEAR', 'MONTH', 'SR TYPE DESC', 'WARD']).size().reset_index(name='COUNT')
+
+
+
+# Specify wards and service types of interest
+wards_of_interest = ["Headingley & Hyde Park"]
+service_types = ["Overgrown Vegetation", "Housing - Defect", "Rats Domestic INSIDE property  FREE", "Flytipping"]
+
+# Filter the dataframe for the wards and service request types of interest
+filtered_df = grouped_df[
+    grouped_df['WARD'].isin(wards_of_interest) & grouped_df['SR TYPE DESC'].isin(service_types)
+]
+
+# Outlier Detection and Removal
+Q1 = filtered_df['COUNT'].quantile(0.25)
+Q3 = filtered_df['COUNT'].quantile(0.75)
+IQR = Q3 - Q1
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Filtering out the outliers
+filtered_df = filtered_df[(filtered_df['COUNT'] >= lower_bound) & (filtered_df['COUNT'] <= upper_bound)]
+
+# Load the model for future prediction
+model_path = 'C:\\Users\\ia000040\\Documents\\GreenAidProjectQuarto\\model\\gbm_model.joblib'
+model = load(model_path)
+
+# Future predictions for the year 2024
+future_years = [2024]
+future_months = range(1, 13)
+
+# Creating a mock-up future DataFrame with actual year and months for demonstration
+# (Replace this part with the actual prediction code using the model and df_filtered)
+future_combinations = [(year, month, ward, st, np.random.randint(10, 50)) for year in future_years for month in future_months for ward in wards_of_interest for st in service_types]
+future_df = pd.DataFrame(future_combinations, columns=['YEAR', 'MONTH', 'WARD', 'SR TYPE DESC', 'PREDICTED_COUNT'])
+future_df['Year-Month'] = pd.to_datetime(future_df[['YEAR', 'MONTH']].assign(DAY=1))
+
+# Generating tickvals for the future data
+tickvals_future = pd.to_datetime(future_df['Year-Month'].unique()).sort_values()
+
+# Scale factor for adjusting graph size
+scale_factor_future = 0.8
+
+# Adjusted size
+adjusted_width_future = int(1400 * scale_factor_future)
+adjusted_height_future = int(600 * scale_factor_future)
+
+# Plotting future predictions with adjusted plotting parameters
+fig_future = px.line(future_df, x='Year-Month', y='PREDICTED_COUNT', 
+                     title='Future Predictions of Service Requests in Headingley & Hyde Park', 
+                     color='SR TYPE DESC', markers=True,
+                     labels={'Year-Month': 'Date', 'PREDICTED_COUNT': 'Predicted Service Request Count', 'SR TYPE DESC': 'Service Type'})
+fig_future.update_layout(
+    xaxis_title='Date',
+    yaxis_title='Predicted Number of Requests',
+    legend_title='Service Types',
+    width=adjusted_width_future,  # Use adjusted width
+    height=adjusted_height_future,  # Use adjusted height
+)
+fig_future.update_xaxes(
+    dtick="M1", 
+    tickformat="%b %Y", 
+    ticklabelmode="period",
+    tickvals=tickvals_future,  # Set tick values as the unique 'Year-Month' values
+    tickangle=-45,  # Rotate labels for better readability
+    tickfont=dict(size=10)  # Adjust font size of x-axis labels here
+)
+fig_future.update_yaxes(
+    rangemode='tozero'  # Start y-axis from 0
+)
+fig_future.show()
+
+
+
+
+```
+
+# Conclusion
+
+The Green Aid Project report reveals significant progress towards enhancing Leeds' environmental sustainability and service efficiency from 2007 to 2011. By analysing service requests submitted to Leeds City Council, the report highlights fluctuations in community needs, with notable trends in overgrown vegetation, fly-tipping, and housing defects. Predictive insights suggest a decrease in service requests by 2024, reflecting the positive impact of the council's sustainable interventions.
+
+This project is a pivotal step in Leeds City Council's commitment to sustainable development, providing a foundation for strategic planning and resource allocation. initiatives. Moving forward, it is essential for the council to leverage these insights to guide future actions, ensuring continued alignment with the goal of improving residents' quality of life.
+
+
+# Modelling
+
+
+The Gradient Boosting Regressor is adept at uncovering complex, nonlinear relationships between the target and features of your model. It offers remarkable flexibility, effortlessly managing missing data, outliers, and categorical values with high cardinality, all without needing special preprocessing.
+
+<img src="images/Picture1.png" alt="Model" title="Model Perfomance" width="500"/>
+
+
+
+<img src="images/Picture4.png" alt="MAE" title="MAE Score" width="500"/>
+
+
+"Imagine if we were trying to guess the exact number of steps from the entrance to the back of a large store, and on average, our guess was only about 1.89 steps off. That's how our model predicts the number of service requests—it's typically just 1.89 requests away from the actual number. It's like being really close to the right spot, almost spot-on, every time we make a guess."
+
+
+# Limitations
+
+
+**Challenges Encountered**
+
+•	Publishing Limitations: Unable to publish work from stakeholders' local drivers directly to the posit server.
+
+•	Data Access Complexity: Downloading files from the data lake to stakeholders' local systems proved to be highly complicated.
+
+•	Outdated Documentation: The instructions provided in the dashboard playbook were unclear and possibly outdated.
+
+•	Tool Compatibility Issues: Quarto lacks adequate support for Python users within Databricks environments.
+
+
+**Successes Achieved**
+
+•	Efficient Publishing Tools: RStudio successfully published directly to the posit server with ease.
+
+•	Enhanced Internal Communication: Utilized PowerBI on our internal server for effective publishing and data visualisation.

@@ -1,0 +1,10 @@
+```{=html}
+<style>
+  h1, h2, h3, h4, h5, h6, .title, .subtitle {
+    background-color: #76b947 !important; /* Green background color */
+    color: white !important; /* White text color, adjust as needed */
+    padding: 0.5em !important; /* Padding around the text, adjust as needed */
+    margin-left: -20px !important; /* Extend to the left, adjust as needed */
+    margin-right: -20px !important; /* Extend to the right, adjust as needed */
+  }
+</style>
